@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notas de cata</title>
+  <link rel="icon" type="image/svg+xml" href="img/wine.svg">
+  <link rel="stylesheet" href="https://unpkg.com/chota@latest">
+</head>
+<body>
+<div id="app">
+
+<nav>
+  <a href="#">
+    <img height="20" width="20" src="img/wine.svg">
+    <span>Notas de cata</span>
+  </a>
+  <a href="#Notas">Notas</a>
+  <a href="#Nueva nota" @click="nuevaNota">Nueva nota</a>
+</nav>
+
+
+<form @submit.prevent="guardarNota">
+  <h1>Nueva nota</h1>
+
+  <label>
+    Fecha
+    <input v-model="nota.fecha" type="date">
+  </label>
+
+  <section>
+    <h2>Vino</h2>
+
+    <fieldset>
+      <legend>Variedad</legend>
+      <label v-for="(_, variedad) of variedades">
+        <input v-model="nota.variedad" type="radio" :value="variedad">
+        {{ variedad.capitalize() }}
+      </label>
+    </fieldset>
+
+    <label>
+      Varietal
+      <select v-model="varietal">
+        <option disabled value="">Seleccionar...</option>
+        <option v-for="(_, varietal) of varietalesDeLaVariedad" :value="varietal">{{ varietal.capitalize() }}</option>
+      </select>
+    </label>
+
+    <label>
+      Productor
+      <input v-model.trim="nota.productor" type="text" placeholder="Escala humana">
+    </label>
+
+    <label>
+      Línea
+      <input v-model.trim="nota.línea" type="text" placeholder="Livverá">
+    </label>
+
+    <label>
+      Nombre
+      <input v-model.trim="nota.nombre" type="text" placeholder="Malbec">
+    </label>
+
+    <label>
+      Cosecha
+      <input v-model.trim="nota.cosecha" type="number" placeholder="2019">
+    </label>
+  </section>
+
+  <section>
+    <h2>Ver</h2>
+
+    <fieldset>
+      <legend>Color</legend>
+      <label v-for="({ código }, color) of coloresDeLaVariedad" :style="{ color: código }">
+        <input v-model="nota.color" type="radio" :value="color">
+        {{ color.capitalize() }}
+      </label>
+    </fieldset>
+  </section>
+
+  <section>
+    <h2>Oler y gustar</h2>
+
+    <fieldset v-for="({ descriptor }, sabor) of saboresDelVarietal">
+      <legend><i>{{ descriptor.capitalize() }}</i> &gt {{ sabor.capitalize() }}</legend>
+      <img height="64" width="64" :src="'img/' + sabor.replace(/ /g,'-') + '.svg'">
+      <input v-model="nota.sabores[sabor]" type="checkbox">
+    </fieldset>
+  </section>
+
+  <section>
+    <h2>Estructura</h2>
+
+    <fieldset v-for="(mapa, elemento) of estructura">
+      <legend>{{ elemento.capitalize() }}</legend>
+      <img height="64" width="64">
+      <label>
+        {{ [ 'seleccionar...', ...mapa ][$root[elemento]].capitalize() }}
+        <input v-model.number="$root[elemento]" type="range" max="3">
+      </label>
+    </fieldset>
+  </section>
+
+  <section>
+    <h2>Observaciones</h2>
+    <textarea v-model.trim="nota.observaciones" rows="4" placeholder="..."></textarea>
+
+    <fieldset>
+      <legend>Puntaje</legend>
+
+      <label>
+        <input v-model.number="nota.puntaje" type="radio" value="1">
+        :(
+      </label>
+
+      <label>
+        <input v-model.number="nota.puntaje" type="radio" value="3">
+        :|
+      </label>
+
+      <label>
+        <input v-model.number="nota.puntaje" type="radio" value="5">
+        :)
+      </label>
+    </fieldset>
+  </section>
+
+  <button type="submit">Guardar</button>
+  <button @click="borrarNota">Borrar</button>
+</form>
+
+<h1>Notas</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Vino</th>
+      <th>Variedad</th>
+      <th>Varietal</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="(data, id) of notas" @click="mostrarNota(id)">
+      <td>{{ presentarVino(data) || '-' }}</td>
+      <td>{{ data.variedad ? data.variedad.capitalize() : '-' }}</td>
+      <td>{{ data.varietal ? data.varietal.capitalize() : '-' }}</td>
+    </tr>
+  </tbody>
+</table>
+
+</div>
+
+<script src="/__/firebase/7.10.0/firebase-app.js"></script>
+<script src="/__/firebase/7.10.0/firebase-auth.js"></script>
+<script src="/__/firebase/7.10.0/firebase-firestore.js"></script>
+<script src="/__/firebase/init.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="js/index.js"></script>
+</body>
+</html>
