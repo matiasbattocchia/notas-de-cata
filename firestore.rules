@@ -1,7 +1,24 @@
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write;
+    match /usuaries/{id_usuarie}/notas/{id_nota} {
+      allow read, write: if request.auth.uid == id_usuarie;
+    }
+
+    match /colores/{id_color} {
+      allow read: if true;
+    }
+
+    match /sabores/{id_sabor} {
+      allow read: if true;
+    }
+
+    match /variedades/{id_variedad} {
+      allow read: if true;
+    }
+
+    match /varietales/{id_varietal} {
+      allow read: if true;
     }
   }
 }

@@ -2,17 +2,18 @@ String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
 }
 
+
 function modeloNota() {
   return {
     fecha: (new Date()).toISOString().split('T')[0],
     variedad: null,
-    varietal: null,
+    varietales: [],
     productor: null,
     línea: null,
     nombre: null,
     cosecha: null,
     color: null,
-    sabores: {},
+    sabores: [],
     cuerpo: null,
     taninos: null,
     acidez: null,
@@ -24,7 +25,9 @@ function modeloNota() {
 }
 
 store = {
+  usuarie: null,
   variedades: {},
+  varietales: {},
   colores: {},
   sabores: {},
   estructura: {
@@ -39,82 +42,85 @@ store = {
   notas: {}
 }
 
+// AUTH
+const auth = firebase.auth()
+var proveedor = new firebase.auth.GoogleAuthProvider()
+
+// DB
 const db = firebase.firestore()
 
-async function alcanzarColección(colección, subcolección) {
+var notas_usuarie
+
+auth.onAuthStateChanged(usuarie => {
+  if (usuarie) {
+    store.usuarie = usuarie
+
+    notas_usuarie = `usuaries/${usuarie.uid}/notas`
+
+    db.collection(notas_usuarie).onSnapshot(snap => {
+      let aux = {}
+
+      snap.forEach(doc => { aux[doc.id] = doc.data() })
+
+      store.notas = aux
+    })
+  } else {
+    store.usuarie = null
+    notas_usuarie = null
+  }
+})
+
+async function alcanzarColección(colección) {
   let aux = {}
   let docs = await db.collection(colección).get()
 
   docs.forEach(doc => { aux[doc.id] = doc.data() })
 
-  path = colección.split('/')
-
-  if (path.length === 1) {
-    store[path[0]] = aux
-  } else {
-    store[path[0]][path[1]][path[2]] = aux
-  }
-
-  if (subcolección) {
-    docs.forEach(doc => alcanzarColección(`${colección}/${doc.id}/${subcolección}`) )
-  }
+  store[colección] = aux
 }
 
-alcanzarColección('variedades', 'varietales')
+alcanzarColección('variedades')
+alcanzarColección('varietales')
 alcanzarColección('colores')
 alcanzarColección('sabores')
-
-db.collection('notas').onSnapshot(snap => {
-  let aux = {}
-
-  snap.forEach(doc => { aux[doc.id] = doc.data() })
-
-  store.notas = aux
-})
 
 var vm = new Vue({
   el: '#app',
   data: store,
   methods: {
+    entrar() {
+      auth.signInWithRedirect(proveedor)
+    },
+    salir() {
+      auth.signOut()
+    },
     nuevaNota() {
       this.nota_id = null
       this.nota = modeloNota()
     },
     guardarNota() {
-      let sabores = this.nota.sabores
-
-      for (const [key, value] of Object.entries(sabores)) if (!value) delete sabores[key]
-
       this.nota_id
-        ? db.collection('notas').doc(this.nota_id).set(this.nota)
-        : db.collection('notas').add(this.nota)
+        ? db.collection(notas_usuarie).doc(this.nota_id).set(this.nota)
+        : db.collection(notas_usuarie).add(this.nota)
     },
     borrarNota() {
-      if (this.nota_id) db.collection('notas').doc(this.nota_id).delete()
-    },
-    presentarVino({ productor, línea, nombre, cosecha }) {
-      return [productor, línea, nombre, cosecha]
-        .filter(Boolean)
-        .join(' ')
+      if (this.nota_id) db.collection(notas_usuarie).doc(this.nota_id).delete()
     },
     mostrarNota(id) {
       this.nota_id = id
-      this.nota = this.notas[id]
+      this.nota = { ...this.notas[id] }
     }
   },
   computed: {
     coloresDeLaVariedad() {
       let variedad = this.nota.variedad
-      let varietal = this.nota.varietal
 
       if (!variedad) return null
 
-      if (!this.variedades[variedad].varietales[varietal]) this.nota.varietal = null
-
       let colores = {}
 
-      this.variedades[variedad].colores.forEach(({ id }) => {
-        colores[id] = this.colores[id]
+      this.variedades[variedad].colores.forEach(ref => {
+        colores[ref.id] = this.colores[ref.id]
       })
 
       return colores
@@ -124,29 +130,31 @@ var vm = new Vue({
 
       if (!variedad) return null
 
-      return this.variedades[variedad].varietales
+      return Object.entries(this.varietales)
+        .filter(([id, varietal]) => varietal.hasOwnProperty(variedad))
+        .reduce((varietales, [id, varietal]) => { varietales[id] = varietal; return varietales }, {})
     },
     saboresDelVarietal() {
       let variedad = this.nota.variedad
-      let varietal = this.nota.varietal
+      let varietales = this.nota.varietales
 
-      if (!variedad || !varietal) return null
+      if (!variedad || !varietales.length) return null
 
       let sabores = {}
 
-      this.variedades[variedad].varietales[varietal].sabores.forEach(({ id }) => {
-        if (this.sabores[id]) {
-          sabores[id] = this.sabores[id]
-        } else {
-          alert(`Falta el sabor: ${id}`)
-        }
+      Object.entries(this.varietalesDeLaVariedad)
+        .filter(([id, varietal]) => varietales.includes(id))
+        .map(([id, varietal]) => varietal[variedad]) // array de referencias a sabores
+        .flat()
+        .forEach(ref => {
+          if (this.sabores[ref.id]) {
+            sabores[ref.id] = this.sabores[ref.id]
+          } else {
+            alert(`Falta el sabor: ${ref.id}`)
+          }
       })
 
       return sabores
-    },
-    varietal: {
-      get() { return this.nota.varietal || '' },
-      set(valor) { this.nota.varietal = valor ? valor : null }
     },
     cuerpo: {
       get() { return this.nota.cuerpo || 0 },
