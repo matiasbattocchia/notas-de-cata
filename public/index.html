@@ -11,21 +11,25 @@
 <div id="app">
 
 <nav>
-  <a href="#">
+  <span>
     <img height="20" width="20" src="img/wine.svg">
-    <span>Notas de cata</span>
-  </a>
-  <a href="#Notas">Notas</a>
-  <a href="#Nueva nota" @click="nuevaNota">Nueva nota</a>
+    Notas de cata
+  </span>
+  <a href="/" @click.prevent="navegar">Notas</a>
+  <a href="nueva-nota" @click.prevent="navegar">Nueva nota</a>
 
-  <div v-if="usuarie">
-    <span>{{ usuarie.displayName }}</span>
+  <span v-if="usuarie">
+    {{ usuarie.displayName }}
     <img height="20" width="20" :src="usuarie.photoURL">
-  </div>
+  </span>
   <button v-else @click="entrar">Entrar</button>
 </nav>
 
+<div v-show="vista === '404'">
+  <p>Página no encontrada :(</p>
+</div>
 
+<div v-show="vista === 'nota'">
 <form @submit.prevent="guardarNota">
   <h1>Nueva nota</h1>
 
@@ -133,9 +137,11 @@
   </section>
 
   <button type="submit">Guardar</button>
-  <button @click="borrarNota">Borrar</button>
+  <button type="button" @click="borrarNota">Borrar</button>
 </form>
+</div>
 
+<div v-show="vista === 'lista'">
 <h1>Notas</h1>
 
 <table>
@@ -147,16 +153,16 @@
     </tr>
   </thead>
   <tbody>
-    <tr v-for="(nota, id) of notas" @click="mostrarNota(id)">
+    <tr v-for="(nota, id) of notas" @click="navegar(id)">
       <td>{{ [nota.productor, nota.línea, nota.nombre, nota.cosecha].filter(Boolean).join(' ') }}</td>
       <td>{{ nota.variedad ? nota.variedad.capitalize() : '' }}</td>
       <td>{{ nota.varietales.map(varietal => varietal.capitalize()).join(', ') }}</td>
     </tr>
   </tbody>
 </table>
-
 </div>
 
+</div>
 <script src="/__/firebase/7.10.0/firebase-app.js"></script>
 <script src="/__/firebase/7.10.0/firebase-auth.js"></script>
 <script src="/__/firebase/7.10.0/firebase-firestore.js"></script>

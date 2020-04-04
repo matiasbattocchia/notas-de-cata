@@ -25,6 +25,8 @@ function modeloNota() {
 }
 
 store = {
+  ruta: null,
+  vista: null,
   usuarie: null,
   variedades: {},
   varietales: {},
@@ -57,6 +59,7 @@ auth.onAuthStateChanged(usuarie => {
 
     notas_usuarie = `usuaries/${usuarie.uid}/notas`
 
+    // TODO: ordenar por más reciente.
     db.collection(notas_usuarie).onSnapshot(snap => {
       let aux = {}
 
@@ -66,7 +69,7 @@ auth.onAuthStateChanged(usuarie => {
     })
   } else {
     store.usuarie = null
-    notas_usuarie = null
+    // TODO: manejar el logout: desactivar onSnapshot, resetear formulario, etcétera.
   }
 })
 
@@ -84,10 +87,17 @@ alcanzarColección('varietales')
 alcanzarColección('colores')
 alcanzarColección('sabores')
 
+window.addEventListener('popstate', () => store.ruta = window.location.pathname)
+
 var vm = new Vue({
   el: '#app',
   data: store,
   methods: {
+    navegar(ruta) {
+      if (ruta instanceof Event) ruta = ruta.target.pathname
+      history.pushState(null, null, ruta)
+      this.ruta = window.location.pathname
+    },
     entrar() {
       auth.signInWithRedirect(proveedor)
     },
@@ -99,16 +109,44 @@ var vm = new Vue({
       this.nota = modeloNota()
     },
     guardarNota() {
+      // TODO: timestamps creado/actualizado.
       this.nota_id
         ? db.collection(notas_usuarie).doc(this.nota_id).set(this.nota)
         : db.collection(notas_usuarie).add(this.nota)
+      this.navegar('/')
     },
     borrarNota() {
       if (this.nota_id) db.collection(notas_usuarie).doc(this.nota_id).delete()
+      this.navegar('/')
     },
     mostrarNota(id) {
       this.nota_id = id
       this.nota = { ...this.notas[id] }
+    }
+  },
+  created() {
+    this.ruta = window.location.pathname
+  },
+  watch: {
+    ruta(ruta_nueva, ruta_anterior) {
+      switch (ruta_nueva) {
+        case '/':
+          this.vista = 'lista'
+          break
+        case '/nueva-nota':
+          this.nuevaNota()
+          this.vista = 'nota'
+          break
+        default:
+          let nota_id = ruta_nueva.substr(1)
+
+          if (this.notas.hasOwnProperty(nota_id)) {
+            this.mostrarNota(nota_id)
+            this.vista = 'nota'
+          } else {
+            this.vista = '404'
+          }
+      }
     }
   },
   computed: {
