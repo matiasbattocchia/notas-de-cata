@@ -20,7 +20,8 @@ function modeloNota() {
     alcohol: null,
     dulzura: null,
     observaciones: null,
-    puntaje: null
+    puntaje: null,
+    editado: firebase.firestore.FieldValue.serverTimestamp()
   }
 }
 
@@ -36,7 +37,7 @@ store = {
     cuerpo:  ['liviano','medio','grueso'],
     taninos: ['bajos','medios','altos'],
     acidez:  ['baja','media','alta'],
-    alcohol: ['-12%','12–14%','+14%'],
+    alcohol: ['12%-','12–14%','14%+'],
     dulzura: ['muy seco','seco','dulce']
   },
   nota_id: null,
@@ -71,6 +72,9 @@ auth.onAuthStateChanged(usuarie => {
     store.usuarie = null
     // TODO: manejar el logout: desactivar onSnapshot, resetear formulario, etcétera.
   }
+
+  // Workaround callback al enrutador:
+  store.ruta = 'ruta'
 })
 
 async function alcanzarColección(colección) {
@@ -109,7 +113,6 @@ var vm = new Vue({
       this.nota = modeloNota()
     },
     guardarNota() {
-      // TODO: timestamps creado/actualizado.
       this.nota_id
         ? db.collection(notas_usuarie).doc(this.nota_id).set(this.nota)
         : db.collection(notas_usuarie).add(this.nota)
@@ -129,6 +132,13 @@ var vm = new Vue({
   },
   watch: {
     ruta(ruta_nueva, ruta_anterior) {
+      //if (!this.usuarie) {
+        //this.vista = 'inicio'
+        //return
+      //}
+
+      if (ruta_nueva === 'ruta') this.ruta = ruta_anterior
+
       switch (ruta_nueva) {
         case '/':
           this.vista = 'lista'
@@ -140,6 +150,7 @@ var vm = new Vue({
         default:
           let nota_id = ruta_nueva.substr(1)
 
+          // TODO: esperar a que this.notas se cargue antes de preguntarle por un documento.
           if (this.notas.hasOwnProperty(nota_id)) {
             this.mostrarNota(nota_id)
             this.vista = 'nota'
