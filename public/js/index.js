@@ -61,7 +61,7 @@ auth.onAuthStateChanged(usuarie => {
     notas_usuarie = `usuaries/${usuarie.uid}/notas`
 
     // TODO: ordenar por más reciente.
-    db.collection(notas_usuarie).onSnapshot(snap => {
+    db.collection(notas_usuarie).orderBy('editado', 'desc').onSnapshot(snap => {
       let aux = {}
 
       snap.forEach(doc => { aux[doc.id] = doc.data() })
@@ -72,9 +72,8 @@ auth.onAuthStateChanged(usuarie => {
     store.usuarie = null
     // TODO: manejar el logout: desactivar onSnapshot, resetear formulario, etcétera.
   }
-
   // Workaround callback al enrutador:
-  store.ruta = 'ruta'
+   store.ruta = 'ruta'
 })
 
 async function alcanzarColección(colección) {
@@ -103,6 +102,7 @@ var vm = new Vue({
       this.ruta = window.location.pathname
     },
     entrar() {
+      //this.navegar(`${this.ruta}#cargando`)
       auth.signInWithRedirect(proveedor)
     },
     salir() {
@@ -132,10 +132,15 @@ var vm = new Vue({
   },
   watch: {
     ruta(ruta_nueva, ruta_anterior) {
-      //if (!this.usuarie) {
-        //this.vista = 'inicio'
+      //if (ruta_nueva.match(/#cargando/)) {
+        //this.vista = 'cargando'
         //return
       //}
+
+      if (!this.usuarie) {
+        this.vista = 'inicio'
+        return
+      }
 
       if (ruta_nueva === 'ruta') this.ruta = ruta_anterior
 
