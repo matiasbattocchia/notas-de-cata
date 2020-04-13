@@ -26,7 +26,6 @@ function modeloNota() {
 }
 
 store = {
-  ruta: null,
   vista: null,
   usuarie: null,
   variedades: {},
@@ -52,28 +51,33 @@ var proveedor = new firebase.auth.GoogleAuthProvider()
 // DB
 const db = firebase.firestore()
 
-var notas_usuarie
+var notas_usuarie, desuscribir
 
 auth.onAuthStateChanged(usuarie => {
   if (usuarie) {
-    store.usuarie = usuarie
+    vm.usuarie = usuarie
 
     notas_usuarie = `usuaries/${usuarie.uid}/notas`
 
-    // TODO: ordenar por más reciente.
-    db.collection(notas_usuarie).orderBy('editado', 'desc').onSnapshot(snap => {
+    desuscribir = db.collection(notas_usuarie).orderBy('editado', 'desc').onSnapshot(snap => {
       let aux = {}
 
       snap.forEach(doc => { aux[doc.id] = doc.data() })
 
-      store.notas = aux
+      vm.notas = aux
+
+      vm.navegar(window.location.pathname, true)
     })
   } else {
-    store.usuarie = null
-    // TODO: manejar el logout: desactivar onSnapshot, resetear formulario, etcétera.
+    desuscribir && desuscribir()
+    vm.usuarie = null
+
+    if (window.location.hash === '#cargando') {
+      vm.navegar(window.location.pathname, true)
+    } else {
+      vm.enrutar(window.location)
+    }
   }
-  // Workaround callback al enrutador:
-   store.ruta = 'ruta'
 })
 
 async function alcanzarColección(colección) {
@@ -90,19 +94,52 @@ alcanzarColección('varietales')
 alcanzarColección('colores')
 alcanzarColección('sabores')
 
-window.addEventListener('popstate', () => store.ruta = window.location.pathname)
+window.addEventListener('popstate', () => vm.enrutar(window.location))
 
 var vm = new Vue({
   el: '#app',
   data: store,
   methods: {
-    navegar(ruta) {
+    navegar(ruta, reemplazar) {
       if (ruta instanceof Event) ruta = ruta.target.pathname
-      history.pushState(null, null, ruta)
-      this.ruta = window.location.pathname
+
+      reemplazar ? history.replaceState(null, null, ruta) : history.pushState(null, null, ruta)
+
+      this.enrutar(window.location)
+    },
+    enrutar({pathname, hash}) {
+      if (hash === '#cargando') {
+        this.vista = 'cargando'
+        return
+      }
+
+      if (!this.usuarie) {
+        this.vista = 'inicio'
+        return
+      }
+
+      switch (pathname) {
+        case '/':
+          this.vista = 'lista'
+          break
+        case '/nueva-nota':
+          this.nuevaNota()
+          this.vista = 'nota'
+          break
+        default:
+          let nota_id = pathname.substr(1)
+
+          // TODO: esperar a que this.notas se cargue antes de preguntarle por un documento.
+          if (this.notas.hasOwnProperty(nota_id)) {
+            this.mostrarNota(nota_id)
+            this.vista = 'nota'
+          } else {
+            this.vista = '404'
+          }
+      }
     },
     entrar() {
-      //this.navegar(`${this.ruta}#cargando`)
+      this.navegar(`${window.location.pathname}#cargando`)
       auth.signInWithRedirect(proveedor)
     },
     salir() {
@@ -128,41 +165,10 @@ var vm = new Vue({
     }
   },
   created() {
-    this.ruta = window.location.pathname
-  },
-  watch: {
-    ruta(ruta_nueva, ruta_anterior) {
-      //if (ruta_nueva.match(/#cargando/)) {
-        //this.vista = 'cargando'
-        //return
-      //}
-
-      if (!this.usuarie) {
-        this.vista = 'inicio'
-        return
-      }
-
-      if (ruta_nueva === 'ruta') this.ruta = ruta_anterior
-
-      switch (ruta_nueva) {
-        case '/':
-          this.vista = 'lista'
-          break
-        case '/nueva-nota':
-          this.nuevaNota()
-          this.vista = 'nota'
-          break
-        default:
-          let nota_id = ruta_nueva.substr(1)
-
-          // TODO: esperar a que this.notas se cargue antes de preguntarle por un documento.
-          if (this.notas.hasOwnProperty(nota_id)) {
-            this.mostrarNota(nota_id)
-            this.vista = 'nota'
-          } else {
-            this.vista = '404'
-          }
-      }
+    if (window.location.hash === '#cargando') {
+      this.enrutar(window.location)
+    } else {
+      this.navegar(`${window.location.pathname}#cargando`)
     }
   },
   computed: {
