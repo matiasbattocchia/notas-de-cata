@@ -26,6 +26,11 @@
       -moz-appearance: textfield;
     }
 
+    input[type=text],
+    input[type=number] {
+      min-width: 0;
+    }
+
     .tarjeta {
       -webkit-column-break-inside: avoid;
                 page-break-inside: avoid;
@@ -71,9 +76,9 @@
 </div>
 
 <div v-cloak v-show="vista === 'nota'">
-  <form @submit.prevent="guardarNota" class="flex flex-wrap items-start justify-around">
+  <form @submit.prevent="guardarNota" style="columns: 3 16rem;">
 
-    <section class="w-full max-w-sm">
+    <section class="w-full tarjeta">
       <div class="flex justify-end p-1">
         <input v-model="nota.fecha" type="date">
       </div>
@@ -121,7 +126,7 @@
       </div>
     </section>
 
-    <section class="w-full max-w-sm">
+    <section class="w-full tarjeta">
       <h2 class="inline bg-white text-xl">Vista</h2>
       <div class="bg-white mb-4 p-1">
         <div v-if="coloresDeLaVariedad">
@@ -137,7 +142,7 @@
       </div>
     </section>
 
-    <section class="w-full max-w-sm">
+    <section class="w-full tarjeta">
       <h2 class="inline bg-white text-xl">Olfato y gusto</h2>
       <div class="bg-white mb-4 p-1">
         <div v-if="saboresDelVarietal">
@@ -154,7 +159,7 @@
       </div>
     </section>
 
-    <section class="w-full max-w-sm">
+    <section class="w-full tarjeta">
       <h2 class="inline bg-white text-xl">Estructura</h2>
       <div class="bg-white mb-4 p-1">
         <div v-for="(mapa, id) of estructura" class="flex items-start bg-gray-100 h-16 p-1 mb-1">
@@ -167,7 +172,7 @@
       </div>
     </section>
 
-    <section class="w-full max-w-sm">
+    <section class="w-full tarjeta">
       <h2 class="inline bg-white text-xl">Observaciones</h2>
       <div class="bg-white p-1 mb-4">
         <textarea v-model.trim="nota.observaciones" rows="4" class="border resize-none font-light p-1 mb-1 w-full"></textarea>
@@ -211,19 +216,17 @@
         <button type="submit" class="bg-pink-300 hover:bg-pink-500 font-bold py-2 px-4">Guardar</button>
       </div>
     </section>
-
-    <section class="w-full max-w-sm"></section>
   </form>
 </div>
 
 <div v-cloak v-show="vista === 'lista'">
   <div class="flex justify-center">
-    <a href="nueva-nota" @click.prevent="navegar" class="bg-pink-300 hover:bg-pink-500 font-bold py-2 w-2/3 text-center mb-10">Nueva nota</a>
+    <a href="nueva-nota" @click.prevent="navegar" class="bg-pink-300 hover:bg-pink-500 font-bold py-2 max-w-sm w-2/3 text-center mb-10">Nueva nota</a>
   </div>
 
-  <section style="column-count: 2; column-gap: 0px" class="-mx-1">
-    <div v-for="(nota, id) of notas" @click="navegar(id)" class="tarjeta text-sm leading-none tracking-tight bg-white mb-2 mx-1 p-1 overflow-hidden" style="min-height: 5em; max-height: 15em;">
-      <div class="font-medium mb-2">
+  <section style="columns: 4 8rem; column-gap: 0.75rem;">
+    <div v-for="(nota, id) of notas" @click="navegar(id)" class="tarjeta text-sm leading-none tracking-tight bg-white mb-3 p-1 overflow-hidden" style="min-height: 5em; max-height: 15em;">
+      <div class="font-medium mb-3">
         {{ [nota.productor, nota.línea, nota.nombre, nota.cosecha].filter(Boolean).join(' ') }}
       </div>
       {{ nota.varietales.map(varietal => varietal.capitalize()).join(', ') }}
